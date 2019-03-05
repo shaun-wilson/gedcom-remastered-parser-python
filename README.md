@@ -13,9 +13,9 @@ This package was created with Python 3.7.
 
     schema = Schema.generate_from_files(
         [
-            'https://raw.githubusercontent.com/shaun-wilson/gedcom-remastered/gedcom-5.5.1/gedcom-5.5.1-structures.txt',
-            'https://raw.githubusercontent.com/shaun-wilson/gedcom-remastered/gedcom-5.5.1/gedcom-5.5.1-primitives.txt',
-            'https://raw.githubusercontent.com/shaun-wilson/gedcom-remastered/gedcom-5.5.1/gedcom-5.5.1-tags.txt',
+            'C:/gedcom-remastered/gedcom-5.5.1/gedcom-5.5.1-structures.txt',
+            'C:/gedcom-remastered/gedcom-5.5.1/gedcom-5.5.1-primitives.txt',
+            'C:/gedcom-remastered/gedcom-5.5.1/gedcom-5.5.1-tags.txt',
         ]
     )
     
