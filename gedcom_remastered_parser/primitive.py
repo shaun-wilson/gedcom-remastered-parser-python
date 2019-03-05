@@ -2,19 +2,7 @@ import re
 from collections import OrderedDict
 from typing import List
 
-from functools import update_wrapper
-class reify(object):
-    def __init__(self, wrapped):
-        self.wrapped = wrapped
-        update_wrapper(self, wrapped)
-    def __get__(self, inst, objtype=None):
-        if inst is None:
-            return self
-        val = self.wrapped(inst)
-        setattr(inst, self.wrapped.__name__, val)
-        return val
-cached_property = reify
-
+from .helpers import cached_property
 from .schema_element import SchemaElement
 
 regex_primitive_header = re.compile('^([A-Z0-9_:]+?):= {Size=(\d+|\d+:\d+)}$')
