@@ -15,7 +15,7 @@ class Schema(object):
     def generate_from_files(cls, file_paths:List[str]) -> 'Schema':
         schema = cls()
         for file_path in file_paths:
-            schema._append_file_definition(file_path)
+            schema.append_file_definition(file_path)
         return schema
     
     def __init__(self):
@@ -24,7 +24,7 @@ class Schema(object):
         self.primitives:Dict[Primitive] = OrderedDict()
         self.tags:Dict[Tag] = OrderedDict()
     
-    def _append_file_definition(self, filepath) -> None:
+    def append_file_definition(self, filepath) -> None:
         self.filepaths.append(filepath)
         with open(filepath, 'r') as file_reader:
             current_element = None
