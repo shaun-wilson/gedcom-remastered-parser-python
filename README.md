@@ -7,6 +7,8 @@ The package will have the ability to modify the schema, whether by adding, remov
 
 This package does not parse actual GEDCOM files, and does not validate GEDCOM data. This functionality will be created in another package.
 
+This package was created with Python 3.7.
+
     from gedcom_remastered_parser import Schema
 
     schema = Schema.generate_from_files(
