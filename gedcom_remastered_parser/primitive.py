@@ -1,9 +1,6 @@
 import re
 from collections import OrderedDict
 from typing import List
-import warnings
-
-from .schema_element import SchemaElement
 
 from functools import update_wrapper
 class reify(object):
@@ -18,20 +15,10 @@ class reify(object):
         return val
 cached_property = reify
 
+from .schema_element import SchemaElement
+
 regex_primitive_header = re.compile('^([A-Z0-9_:]+?):= {Size=(\d+|\d+:\d+)}$')
 regex_optionalvalue_components = re.compile('<([^>]+)>|{([^}]+)}|%([^%]+)%|([^{<%]+)')
-
-class ValidationError(Exception):
-    pass
-
-class MinSizeValidationError(ValidationError):
-    pass
-
-class MaxSizeValidationError(ValidationError):
-    pass
-
-class ValueValidationError(ValidationError):
-    pass
 
 class Component(object):
     _tag = "Component"
@@ -106,47 +93,6 @@ class OptionalValue(object):
                 raise ValueError("The definition string for the option was malformed.")
         return components
 
-    def is_valid(self, test, size_max):
-        
-        # If this object has no primtives, do a simple string comparison.
-        if not self.has_primitives:
-            return self.string_compare == test
-        
-        # Otherwise, need to do a regex compare.
-        result = self.regex_compare(test, size_max)
-        return result or False
-
-    @cached_property
-    def string_compare(self):
-        if self.has_primitives:
-            raise TypeError("This `OptionValue` cannot be compared as a string, because it contains a `PrimitiveComponent`.")
-        return "".join(c.value for c in self.components)
-
-    def regex_compare(self, test, size_max):
-        if not self.has_primitives:
-            warnings.warn(f"`OptionValue` '{self.definition}'' does not contain a `PrimitiveComponent`, so should be compared with `string_compare()`.")
-        match_string = "^" + self.get_match_string(size_max) + "$"
-        regex = re.compile(match_string)
-        match = regex.match(test)
-        return match
-
-    def get_match_string(self, size_max):
-        match_components = []
-
-        # TODO, determine component max size.
-
-        for component in self.components:
-            if isinstance(component, PrimitiveComponent):
-                # The regex string for the primitive will be used.
-                primitive = self.parent.schema.primitives[component.value]
-                # The match string from the primitive will already be escaped, so use it directly.
-                match_components.append(primitive.get_match_string(size_max))
-            else:
-                # The raw string value will be used as the regex match. Escape the value.
-                value = re.escape(component.value)
-                match_components.append(value)
-        return "".join(match_components)
-
 DEFAULT_OPTIONS_DEFINITION = "<TEXT>"
 
 class OptionalValues(list):
@@ -163,15 +109,6 @@ class OptionalValues(list):
     @cached_property
     def has_strings(self):
         return any(ov.has_strings for ov in self)
-
-    def is_valid(self, test, size_max):        
-        # Test against each option in order.
-        # Return the option that validated, so that it can be utilised in debugging.
-        # Otherwise, return false.
-        for ov in self:
-            if ov.is_valid(test, size_max):
-                return ov
-        return False
 
 class Primitive(SchemaElement):
 
@@ -241,58 +178,3 @@ class Primitive(SchemaElement):
             definition_text += "\nWhere:\n"
             definition_text += "\n".join(f"{k} = {v}" for k,v in self.terms.items())
         return definition_text
-
-    def validate(self, test:str):
-        # First check the test value fits the size constraints.
-        l = len(test) # TODO, should this convert test to string, in case it is int?
-        if not self.size_min <= l:
-            raise MinSizeValidationError
-        if not l <= self.size_max:
-            raise MaxSizeValidationError
-
-        # TODO, maybe make better, to handle all primary primitives properly/directly?
-        if self.label == "NULL":
-            if test:
-                raise ValueValidationError
-            else:
-                return
-        
-        # Validate the test value against the optional values.
-        if self.optional_values.is_valid(test, self.size_max):
-            # The test validated against one of the options.
-            return
-
-        # No option validated the test string.
-        raise ValueValidationError
-
-    @cached_property
-    def _match_string_template(self):
-        # TODO, implement a proper method and accomponying line in the text file for transferring character requirements.
-        match_string = None
-        if self.label == "TEXT":
-            # This simplified string will match pairs of @ characters, but not sequentially.
-            #match_string = "(?:[^\x7f\x00-\x1F@]|@(?=@[^@])|(?<=@)@){1,248}"
-            # This complex match will match sequential pairs of @ characters.
-            match_string = "(?:[^\x7f\x00-\x1F@]|(?<!@)@(?=@)|(?<=@)@(?=(?:@@)*[^@])|(?<=@@)@(?=@(?:@@)*[^@])){{1,{max}}}"
-        elif self.label == "NUMBER":
-            match_string = "[0-9]{{1,{max}}}"
-        elif self.label == "DIGIT":
-            match_string = "[0-9]"
-        elif self.label == "NULL":
-            match_string = ".{{0}}"
-        return match_string
-
-    def get_match_string(self, alt_max:int=None):
-
-        size_max = min(self.size_max, alt_max or self.size_max)
-
-        if self._match_string_template:
-            # Note that size is only added to the regex for option components that are themselves primitives.
-            # The size of an entire primtive value is check by the validate function of the primtive.
-            match_string = self._match_string_template.format(max=size_max)
-        else:
-            # TODO, determine if other string need a max size, or will the child primitives handle that?
-            match_string = "|".join(ov.get_match_string(size_max) for ov in self.optional_values)
-
-        # Return the primitive wrapped in a group, so that it is captured, and can be used in debugging.
-        return "(" + match_string + ")"
