@@ -9,7 +9,7 @@ class Schema(object):
 
     @classmethod
     def generate_from_file(cls, file_path:str) -> 'Schema':
-        return self.generate_from_files([file_path])
+        return cls.generate_from_files([file_path])
 
     @classmethod
     def generate_from_files(cls, file_paths:List[str]) -> 'Schema':
@@ -20,9 +20,9 @@ class Schema(object):
     
     def __init__(self):
         self.filepaths:List[str] = []
-        self.structures:Dict[Structure] = OrderedDict()
-        self.primitives:Dict[Primitive] = OrderedDict()
-        self.tags:Dict[Tag] = OrderedDict()
+        self.structures:Dict[str, Structure] = OrderedDict()
+        self.primitives:Dict[str, Primitive] = OrderedDict()
+        self.tags:Dict[str, Tag] = OrderedDict()
     
     def append_file_definition(self, filepath) -> None:
         self.filepaths.append(filepath)

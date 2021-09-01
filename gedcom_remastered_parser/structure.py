@@ -137,6 +137,7 @@ class Row(object):
         return super().__new__(cls)
 
     def __init__(self, structure:Structure, *, level:str, xref:str=None, tags:List[str]=None, value:str=None, count_min:str, count_max:str):
+        self._structure = structure
         self.level = level
         self.count_min = int(count_min)
         self.count_max = int(count_max) if count_max != "M" else MANY
@@ -203,6 +204,20 @@ class Row(object):
     def _txt_definition_value (self):
         return None
 
+class SubstructureRow(Row):
+    """+1 <<NOTE_STRUCTURE>> {0:M}"""
+    _syntax_value = True
+    __abstract__ = False
+
+    @property
+    def structure (self) -> Structure:
+        return self._structure.schema.structures[self.value]
+
+    @property
+    def _txt_definition_value(self):
+        substructure_label = self.value # alternative `self.structure.label`
+        return f"<<{substructure_label}>>"
+
 class RowWithTags(Row):
     _syntax_tags = True
     __abstract__ = True
@@ -210,20 +225,6 @@ class RowWithTags(Row):
     @property
     def _txt_definition_tags (self):
         return self.tags[0] if len(self.tags) == 1 else "[" + "|".join(self.tags) + "]"
-
-class SubstructureRow(Row):
-    """+1 <<NOTE_STRUCTURE>> {0:M}"""
-    _syntax_value = True
-    __abstract__ = False
-
-    @property
-    def substructure (self) -> Structure:
-        return structures[self.value]
-
-    @property
-    def _txt_definition_value(self):
-        substructure_label = self.value # alternative `self.substructure.label`
-        return f"<<{substructure_label}>>"
 
 class NoValueRow(RowWithTags):
     """+1 DATA {0:1}"""
